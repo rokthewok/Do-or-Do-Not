@@ -1,8 +1,10 @@
 CC = g++
-CC_FLAGS = -g -w -I.
+CC_FLAGS = -w -I. -I.. -lgtest_main -lgtest
 
-EXEC = trie
-SOURCES = $(wildcard *.cpp)
+EXEC = trie_test
+SOURCES = $(wildcard *.cpp) \
+../thereisno_trie.cpp
+
 OBJECTS = $(SOURCES:.cpp=.o)
 
 $(EXEC): $(OBJECTS)

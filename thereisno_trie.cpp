@@ -1,9 +1,18 @@
+#include <cctype>
 #include "thereisno_trie.h"
 
 
 namespace tin {
 
 const int NODES_PER_LEVEL = 26;
+
+inline char get_current_letter(const std::string & word, int position) {
+    return ::tolower(word[position]);
+}
+
+inline int get_offset_letter_index(char letter) {
+    return static_cast<int>(letter - 'a');
+}
 
 class TrieNode {
 public:
@@ -95,19 +104,29 @@ const TrieImpl & TrieImpl::operator=(const TrieImpl & rhs) {
 
 void TrieImpl::catalog(const std::string & keyword) {
     if(keyword.size()) {
-        this->catalog(keyword, 1, m_root_nodes[keyword[0] - 'a']);
+        char start_letter = get_current_letter(keyword, 0);
+        int start_position = get_offset_letter_index(start_letter);
+        if(!m_root_nodes[start_position]) {
+            m_root_nodes[start_position] = new TrieNode(start_letter);
+        }
+        this->catalog(keyword, 1, m_root_nodes[start_position]);
     }
 }
 
 void TrieImpl::catalog(const std::string & keyword,
                        size_t kw_position,
                        TrieNode * parent_node) {
-    int child_position = keyword[kw_position] - 'a';
-    TrieNode * new_node = new TrieNode(keyword[kw_position]);
+    if(keyword.size() == kw_position) {
+        return;
+    }
+
+    char current_letter = get_current_letter(keyword, kw_position);
+    int child_position =  get_offset_letter_index(current_letter);
+    TrieNode * new_node = new TrieNode(current_letter);
     parent_node->subsequent_nodes[child_position] = new_node;
+
     if(keyword.size() - 1 == kw_position) {
         new_node->terminal_node = true;
-        return;
     }
 
     catalog(keyword, kw_position + 1, new_node);
@@ -115,7 +134,11 @@ void TrieImpl::catalog(const std::string & keyword,
 
 bool TrieImpl::lookup(const std::string & keyword) const {
     if(keyword.size()) {
-        return this->lookup(keyword, 1, m_root_nodes[keyword[0] - 'a']);
+        char start_letter = get_current_letter(keyword, 0);
+        int start_position = get_offset_letter_index(start_letter);
+        if(m_root_nodes[start_position]) {
+            return this->lookup(keyword, 1, m_root_nodes[start_position]);
+        }
     }
 
     return false;
@@ -124,11 +147,11 @@ bool TrieImpl::lookup(const std::string & keyword) const {
 bool TrieImpl::lookup(const std::string & keyword,
                       size_t kw_position,
                       const TrieNode * parent_node) const {
-    int child_position = keyword[kw_position] - 'a';
     if(keyword.size() == kw_position) {
         return true;
     }
 
+    int child_position = get_offset_letter_index(get_current_letter(keyword, kw_position));
     if(!parent_node->subsequent_nodes[child_position]) {
         return false;
     }
