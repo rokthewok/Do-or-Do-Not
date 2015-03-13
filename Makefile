@@ -1,15 +1,23 @@
-CC = g++
-CC_FLAGS = -g -w -I.
-
 EXEC = trie
-SOURCES = $(wildcard *.cpp)
-OBJECTS = $(SOURCES:.cpp=.o)
+SRCDIR = src
+INCDIR = include
+#SOURCES = $(wildcard src/*.cpp)
+OBJECTS = $(wildcard src/*.o)
 
-$(EXEC): $(OBJECTS)
+CC = g++
+CC_FLAGS = -g -w -I. -Iinclude
+
+$(EXEC): main.o thereisno_trie.o
 	$(CC) $(CC_FLAGS) $(OBJECTS) -o $(EXEC)
 
-%o: %.cpp
-	$(CC) -c $(CC_FLAGS) $< -o $@
+main.o: $(SRCDIR)/main.cpp
+	$(CC) -c $(CC_FLAGS) $(SRCDIR)/main.cpp -o $(SRCDIR)/main.o
+
+thereisno_trie.o: $(SRCDIR)/thereisno_trie.cpp
+	$(CC) -c $(CC_FLAGS) $(SRCDIR)/thereisno_trie.cpp -o $(SRCDIR)/thereisno_trie.o
+
+#%o: %.cpp
+#	$(CC) -c $(CC_FLAGS) $< -o $@
 
 clean:
-	rm -f $(EXEC) $(OBJECTS)
+	rm -f $(EXEC) $(SRCDIR)/*.o
