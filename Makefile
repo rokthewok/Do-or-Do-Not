@@ -10,7 +10,7 @@ CC_FLAGS = -g -w -I. -Iinclude
 $(EXEC): main.o thereisno_trie.o
 	$(CC) $(CC_FLAGS) $(OBJECTS) -o $(EXEC)
 
-main.o: $(SRCDIR)/main.cpp
+main.o: $(SRCDIR)/main.cpp thereisno_trie.o
 	$(CC) -c $(CC_FLAGS) $(SRCDIR)/main.cpp -o $(SRCDIR)/main.o
 
 thereisno_trie.o: $(SRCDIR)/thereisno_trie.cpp

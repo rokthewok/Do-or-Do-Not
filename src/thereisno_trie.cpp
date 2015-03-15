@@ -1,3 +1,26 @@
+/* The MIT License (MIT)
+ *
+ *  Copyright (c) 2015 John Ruffer
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy
+ *  of this software and associated documentation files (the "Software"), to deal
+ *  in the Software without restriction, including without limitation the rights
+ *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *  copies of the Software, and to permit persons to whom the Software is
+ *  furnished to do so, subject to the following conditions:
+ *
+ *  The above copyright notice and this permission notice shall be included in
+ *  all copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ *  THE SOFTWARE.
+ */
+
 #include <cctype>
 #include "thereisno_trie.h"
 
@@ -34,7 +57,16 @@ public:
     TrieNode(const TrieNode & other) {
         this->key_letter = other.key_letter;
         for(int i = 0; i != NODES_PER_LEVEL; ++i) {
-            this->subsequent_nodes[i] = other.subsequent_nodes[i];
+            if(subsequent_nodes[i] && other.subsequent_nodes[i]) {
+                *(this->subsequent_nodes[i]) = *(other.subsequent_nodes[i]);
+            } else if(other.subsequent_nodes[i]) {
+                this->subsequent_nodes[i] = new TrieNode(*(other.subsequent_nodes[i]));
+            } else if(this->subsequent_nodes[i]) {
+                delete this->subsequent_nodes[i];
+                this->subsequent_nodes[i] = NULL;
+            } else {
+                this->subsequent_nodes[i] = NULL;
+            }
         }
     }
 
@@ -42,7 +74,16 @@ public:
         if(this != &rhs) {
             this->key_letter = rhs.key_letter;
             for(int i = 0; i != NODES_PER_LEVEL; ++i) {
-                this->subsequent_nodes[i] = rhs.subsequent_nodes[i];
+                if(subsequent_nodes[i] && rhs.subsequent_nodes[i]) {
+                    *(this->subsequent_nodes[i]) = *(rhs.subsequent_nodes[i]);
+                } else if(rhs.subsequent_nodes[i]) {
+                    this->subsequent_nodes[i] = new TrieNode(*(rhs.subsequent_nodes[i]));
+                } else if(this->subsequent_nodes[i]) {
+                    delete this->subsequent_nodes[i];
+                    this->subsequent_nodes[i] = NULL;
+                } else {
+                    this->subsequent_nodes[i] = NULL;
+                }
             }
         }
         return *this;
@@ -69,34 +110,27 @@ private:
     bool lookup(const std::string & keyword,
                 size_t position,
                 const TrieNode * parent_node) const;
-    TrieNode * m_root_nodes[NODES_PER_LEVEL];
+    TrieNode * m_root;
 };
 
 TrieImpl::TrieImpl() {
-    for(int i = 0; i != NODES_PER_LEVEL; ++i) {
-        m_root_nodes[i] = NULL;
-    }
+    m_root = new TrieNode(' ');  // the root of the trie
+                                 // should be an "empty" char
 }
 
 TrieImpl::~TrieImpl() {
-    for(int i = 0; i != NODES_PER_LEVEL; ++i) {
-        if(m_root_nodes[i]) {
-            delete m_root_nodes[i];
-        }
+    if(m_root) {
+        delete m_root;
     }
 }
 
 TrieImpl::TrieImpl(const TrieImpl & other) {
-    for(int i = 0; i != NODES_PER_LEVEL; ++i) {
-        this->m_root_nodes[i] = other.m_root_nodes[i];
-    }
+    this->m_root = new TrieNode(*(other.m_root));
 }
 
 const TrieImpl & TrieImpl::operator=(const TrieImpl & rhs) {
     if(this != &rhs) {
-        for(int i = 0; i != NODES_PER_LEVEL; ++i) {
-            this->m_root_nodes[i] = rhs.m_root_nodes[i];
-        }
+        *(this->m_root) = *(rhs.m_root);
     }
 
     return *this;
@@ -106,10 +140,10 @@ void TrieImpl::catalog(const std::string & keyword) {
     if(keyword.size()) {
         char start_letter = get_current_letter(keyword, 0);
         int start_position = get_offset_letter_index(start_letter);
-        if(!m_root_nodes[start_position]) {
-            m_root_nodes[start_position] = new TrieNode(start_letter);
+        if(!m_root->subsequent_nodes[start_position]) {
+            m_root->subsequent_nodes[start_position] = new TrieNode(start_letter);
         }
-        this->catalog(keyword, 1, m_root_nodes[start_position]);
+        this->catalog(keyword, 1, m_root->subsequent_nodes[start_position]);
     }
 }
 
@@ -136,8 +170,8 @@ bool TrieImpl::lookup(const std::string & keyword) const {
     if(keyword.size()) {
         char start_letter = get_current_letter(keyword, 0);
         int start_position = get_offset_letter_index(start_letter);
-        if(m_root_nodes[start_position]) {
-            return this->lookup(keyword, 1, m_root_nodes[start_position]);
+        if(m_root->subsequent_nodes[start_position]) {
+            return this->lookup(keyword, 1, m_root->subsequent_nodes[start_position]);
         }
     }
 
@@ -168,7 +202,7 @@ void TrieImpl::dump(std::ostream & out) {
 
 
 Trie::Trie()
-    : m_trie(new TrieImpl()) {};
+    : m_trie(new TrieImpl()) {}
 
 Trie::~Trie() {
     if(m_trie) {
@@ -176,9 +210,8 @@ Trie::~Trie() {
     }
 }
 
-Trie::Trie(const Trie & other) {
-    *(this->m_trie) = *(other.m_trie);
-}
+Trie::Trie(const Trie & other)
+    : m_trie(new TrieImpl(*(other.m_trie))) {}
 
 const Trie & Trie::operator=(const Trie & rhs) {
     if(this != &rhs) {
