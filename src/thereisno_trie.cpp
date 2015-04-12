@@ -21,8 +21,13 @@
  *  THE SOFTWARE.
  */
 
-#include <cctype>
 #include "thereisno_trie.h"
+
+#include <cctype>
+
+#ifndef THEREISNO_TRIENODE_H
+#include "thereisno_trienode.h"
+#endif // THEREISNO_TRIENODE_H
 
 
 namespace tin {
@@ -37,63 +42,6 @@ inline int get_offset_letter_index(char letter) {
     return static_cast<int>(letter - 'a');
 }
 
-class TrieNode {
-public:
-    TrieNode(char kl)
-        : key_letter(kl),
-          terminal_node(false) {
-        for(int i = 0; i != NODES_PER_LEVEL; ++i) {
-            subsequent_nodes[i] = NULL;
-        }
-    }
-    ~TrieNode() {
-        for(int i = 0; i != NODES_PER_LEVEL; ++i) {
-            if(subsequent_nodes[i]) {
-                delete subsequent_nodes[i];
-            }
-        }
-    }
-
-    TrieNode(const TrieNode & other) {
-        this->key_letter = other.key_letter;
-        for(int i = 0; i != NODES_PER_LEVEL; ++i) {
-            if(subsequent_nodes[i] && other.subsequent_nodes[i]) {
-                *(this->subsequent_nodes[i]) = *(other.subsequent_nodes[i]);
-            } else if(other.subsequent_nodes[i]) {
-                this->subsequent_nodes[i] = new TrieNode(*(other.subsequent_nodes[i]));
-            } else if(this->subsequent_nodes[i]) {
-                delete this->subsequent_nodes[i];
-                this->subsequent_nodes[i] = NULL;
-            } else {
-                this->subsequent_nodes[i] = NULL;
-            }
-        }
-    }
-
-    const TrieNode & operator=(const TrieNode & rhs) {
-        if(this != &rhs) {
-            this->key_letter = rhs.key_letter;
-            for(int i = 0; i != NODES_PER_LEVEL; ++i) {
-                if(subsequent_nodes[i] && rhs.subsequent_nodes[i]) {
-                    *(this->subsequent_nodes[i]) = *(rhs.subsequent_nodes[i]);
-                } else if(rhs.subsequent_nodes[i]) {
-                    this->subsequent_nodes[i] = new TrieNode(*(rhs.subsequent_nodes[i]));
-                } else if(this->subsequent_nodes[i]) {
-                    delete this->subsequent_nodes[i];
-                    this->subsequent_nodes[i] = NULL;
-                } else {
-                    this->subsequent_nodes[i] = NULL;
-                }
-            }
-        }
-        return *this;
-    }
-
-    char key_letter;
-    bool terminal_node;
-    TrieNode * subsequent_nodes[NODES_PER_LEVEL];
-};
-
 class TrieImpl {
 public:
     TrieImpl();
@@ -106,31 +54,26 @@ public:
 private:
     void catalog(const std::string & keyword,
                  size_t kw_position,
-                 TrieNode * current_node);
+                 TrieNode::TrieNodePtr & parent_node);
     bool lookup(const std::string & keyword,
                 size_t position,
                 const TrieNode * parent_node) const;
-    TrieNode * m_root;
+    TrieNode m_root;
 };
 
-TrieImpl::TrieImpl() {
-    m_root = new TrieNode(' ');  // the root of the trie
-                                 // should be an "empty" char
-}
+TrieImpl::TrieImpl()
+    : m_root(' ') {} // the root of the trie
+                     // should be an "empty" char
 
-TrieImpl::~TrieImpl() {
-    if(m_root) {
-        delete m_root;
-    }
-}
+TrieImpl::~TrieImpl() {}
 
 TrieImpl::TrieImpl(const TrieImpl & other) {
-    this->m_root = new TrieNode(*(other.m_root));
+    this->m_root = other.m_root;
 }
 
 const TrieImpl & TrieImpl::operator=(const TrieImpl & rhs) {
     if(this != &rhs) {
-        *(this->m_root) = *(rhs.m_root);
+        this->m_root = rhs.m_root;
     }
 
     return *this;
@@ -139,17 +82,26 @@ const TrieImpl & TrieImpl::operator=(const TrieImpl & rhs) {
 void TrieImpl::catalog(const std::string & keyword) {
     if(keyword.size()) {
         char start_letter = get_current_letter(keyword, 0);
+        try {
+            TrieNode::TrieNodePtr next_node = m_root->findChildNode(start_letter);
+            this->catalog(keyword, 1, next_node);
+        } catch(const ChildNodeNotFoundException & e) {
+            // insert the node and continue on down
+            m_root->addChildNode(start_letter, false);
+        }
+        /*
         int start_position = get_offset_letter_index(start_letter);
         if(!m_root->subsequent_nodes[start_position]) {
             m_root->subsequent_nodes[start_position] = new TrieNode(start_letter);
         }
         this->catalog(keyword, 1, m_root->subsequent_nodes[start_position]);
+        */
     }
 }
 
 void TrieImpl::catalog(const std::string & keyword,
                        size_t kw_position,
-                       TrieNode * parent_node) {
+                       TrieNode::TrieNodePtr & parent_node) {
     if(keyword.size() == kw_position) {
         return;
     }

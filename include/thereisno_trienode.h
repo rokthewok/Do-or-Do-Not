@@ -21,17 +21,44 @@
  *  THE SOFTWARE.
  */
 
-#include <gtest/gtest.h>
-#include "../include/thereisno_trie.h"
+#ifndef THEREISNO_TRIENODE_H
+#define THEREISNO_TRIENODE_H
 
-TEST(TrieTests, TestTrieConstructor) {
-    EXPECT_NO_THROW(tin::Trie());
-}
+#include <unordered_map>
+#include <utility>
+#include <memory>
 
-TEST(TrieTests, TestCatalog) {
-    tin::Trie trie;
-    trie.catalog("hello");
-}
+namespace tin {
 
-TEST(TrieTests, TestCopyConstructor) {
-}
+class TrieNode {
+public:
+    typedef std::shared_ptr<TrieNode> TrieNodePtr;
+
+    explicit TrieNode(char kl);
+    explicit TrieNode(char kl, bool is_terminal_node);
+    ~TrieNode();
+    TrieNode(const TrieNode & other);
+    const TrieNode & operator=(const TrieNode & rhs);
+
+    char getKeyLetter() const;
+    void setKeyLetter(char key_letter);
+    bool isTerminalNode() const;
+    void isTerminalNode(bool terminal_node);
+    const TrieNodePtr & findChildNode(char key_letter) const;
+    TrieNodePtr & findChildNode(char key_letter);
+    TrieNodePtr & addChildNode(char key_letter, bool is_terminal_node);
+    //void pruneChildNode(char key_letter);
+private:
+    typedef std::unordered_map<char, TrieNodePtr> ChildNodes;
+    typedef ChildNodes::iterator ChildNodesIt;
+    typedef ChildNodes::const_iterator ChildNodesCit;
+    typedef ChildNodes::value_type ChildNodeData;
+
+    char m_key_letter;
+    bool m_terminal_node;
+    ChildNodes m_subsequent_nodes;
+};
+
+} // namespace tin
+
+#endif // THEREISNO_TRIENODE_H

@@ -26,6 +26,7 @@
 
 #include <string>
 #include <ostream>
+#include <memory>
 
 namespace tin {
 
@@ -41,7 +42,7 @@ public:
     bool lookup(const std::string & keyword) const;
     void dump(std::ostream & out);
 private:
-    TrieImpl * m_trie;
+    std::auto_ptr<TrieImpl> m_trie;
 };
 
 } // namespace tin

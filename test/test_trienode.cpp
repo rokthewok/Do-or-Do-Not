@@ -22,16 +22,12 @@
  */
 
 #include <gtest/gtest.h>
-#include "../include/thereisno_trie.h"
+#include "../include/thereisno_trienode.h"
 
-TEST(TrieTests, TestTrieConstructor) {
-    EXPECT_NO_THROW(tin::Trie());
+TEST(TrieNodeTests, TestTrieConstructor) {
+    EXPECT_NO_THROW(tin::TrieNode('a'));
 }
 
-TEST(TrieTests, TestCatalog) {
-    tin::Trie trie;
-    trie.catalog("hello");
-}
-
-TEST(TrieTests, TestCopyConstructor) {
+TEST(TrieNodeTests, TestFindChildNode) {
+    tin::TrieNode('a');
 }
