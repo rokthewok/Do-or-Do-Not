@@ -95,13 +95,6 @@ void TrieImpl::catalog(const std::string & keyword) {
         }
 
         this->catalog(keyword, 1, next_node);
-        /*
-        int start_position = get_offset_letter_index(start_letter);
-        if(!m_root->subsequent_nodes[start_position]) {
-            m_root->subsequent_nodes[start_position] = new TrieNode(start_letter);
-        }
-        this->catalog(keyword, 1, m_root->subsequent_nodes[start_position]);
-        */
     }
 }
 
@@ -123,16 +116,6 @@ void TrieImpl::catalog(const std::string & keyword,
     }
 
     this->catalog(keyword, kw_position + 1, next_node);
-    /*
-    TrieNode * new_node = new TrieNode(current_letter);
-    parent_node->subsequent_nodes[child_position] = new_node;
-
-    if(keyword.size() - 1 == kw_position) {
-        new_node->terminal_node = true;
-    }
-
-    catalog(keyword, kw_position + 1, new_node);
-    */
 }
 
 bool TrieImpl::lookup(const std::string & keyword) const {
