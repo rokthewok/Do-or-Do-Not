@@ -8,6 +8,7 @@ $(SRCDIR)/thereisno_trie.cpp \
 $(SRCDIR)/thereisno_trienode.cpp \
 
 OBJECTS = test_trienode.o \
+test_trie.o \
 $(SRCDIR)/thereisno_trie.o \
 $(SRCDIR)/thereisno_trienode.o \
 

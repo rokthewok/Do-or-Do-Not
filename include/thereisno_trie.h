@@ -42,7 +42,7 @@ public:
     bool lookup(const std::string & keyword) const;
     void dump(std::ostream & out);
 private:
-    std::auto_ptr<TrieImpl> m_trie;
+    std::unique_ptr<TrieImpl> m_trie;
 };
 
 } // namespace tin

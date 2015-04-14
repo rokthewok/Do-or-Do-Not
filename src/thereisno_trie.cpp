@@ -29,6 +29,10 @@
 #include "thereisno_trienode.h"
 #endif // THEREISNO_TRIENODE_H
 
+#ifndef THEREISNO_EXCEPTIONS_H
+#include "thereisno_exceptions.h"
+#endif // THEREISNO_EXCEPTIONS_H
+
 
 namespace tin {
 
@@ -57,7 +61,7 @@ private:
                  TrieNode::TrieNodePtr & parent_node);
     bool lookup(const std::string & keyword,
                 size_t position,
-                const TrieNode * parent_node) const;
+                const TrieNode::TrieNodePtr & parent_node) const;
     TrieNode m_root;
 };
 
@@ -67,9 +71,8 @@ TrieImpl::TrieImpl()
 
 TrieImpl::~TrieImpl() {}
 
-TrieImpl::TrieImpl(const TrieImpl & other) {
-    this->m_root = other.m_root;
-}
+TrieImpl::TrieImpl(const TrieImpl & other) 
+    : m_root(other.m_root) {}
 
 const TrieImpl & TrieImpl::operator=(const TrieImpl & rhs) {
     if(this != &rhs) {
@@ -81,14 +84,17 @@ const TrieImpl & TrieImpl::operator=(const TrieImpl & rhs) {
 
 void TrieImpl::catalog(const std::string & keyword) {
     if(keyword.size()) {
+        TrieNode::TrieNodePtr next_node;
         char start_letter = get_current_letter(keyword, 0);
         try {
-            TrieNode::TrieNodePtr next_node = m_root->findChildNode(start_letter);
+            next_node = m_root.findChildNode(start_letter);
             this->catalog(keyword, 1, next_node);
         } catch(const ChildNodeNotFoundException & e) {
             // insert the node and continue on down
-            m_root->addChildNode(start_letter, false);
+            next_node = m_root.addChildNode(start_letter, false);
         }
+
+        this->catalog(keyword, 1, next_node);
         /*
         int start_position = get_offset_letter_index(start_letter);
         if(!m_root->subsequent_nodes[start_position]) {
@@ -107,7 +113,17 @@ void TrieImpl::catalog(const std::string & keyword,
     }
 
     char current_letter = get_current_letter(keyword, kw_position);
-    int child_position =  get_offset_letter_index(current_letter);
+    TrieNode::TrieNodePtr next_node;
+    //int child_position =  get_offset_letter_index(current_letter);
+    try {
+        next_node = parent_node->findChildNode(current_letter);
+    } catch(const ChildNodeNotFoundException & e) {
+        // insert the node and continue on down
+        next_node = parent_node->addChildNode(current_letter, false);
+    }
+
+    this->catalog(keyword, kw_position + 1, next_node);
+    /*
     TrieNode * new_node = new TrieNode(current_letter);
     parent_node->subsequent_nodes[child_position] = new_node;
 
@@ -116,14 +132,17 @@ void TrieImpl::catalog(const std::string & keyword,
     }
 
     catalog(keyword, kw_position + 1, new_node);
+    */
 }
 
 bool TrieImpl::lookup(const std::string & keyword) const {
     if(keyword.size()) {
         char start_letter = get_current_letter(keyword, 0);
-        int start_position = get_offset_letter_index(start_letter);
-        if(m_root->subsequent_nodes[start_position]) {
-            return this->lookup(keyword, 1, m_root->subsequent_nodes[start_position]);
+        try {
+            TrieNode::TrieNodePtr next_node = m_root.findChildNode(start_letter);
+            return this->lookup(keyword, 1, next_node);
+        } catch(const ChildNodeNotFoundException & e) {
+            return false;
         }
     }
 
@@ -132,19 +151,18 @@ bool TrieImpl::lookup(const std::string & keyword) const {
 
 bool TrieImpl::lookup(const std::string & keyword,
                       size_t kw_position,
-                      const TrieNode * parent_node) const {
+                      const TrieNode::TrieNodePtr & parent_node) const {
     if(keyword.size() == kw_position) {
         return true;
     }
 
-    int child_position = get_offset_letter_index(get_current_letter(keyword, kw_position));
-    if(!parent_node->subsequent_nodes[child_position]) {
+    char current_letter = get_current_letter(keyword, kw_position);
+    try {
+        TrieNode::TrieNodePtr next_node = parent_node->findChildNode(current_letter);
+        return this->lookup(keyword, kw_position + 1, next_node);
+    } catch(const ChildNodeNotFoundException & e) {
         return false;
     }
-
-    return lookup(keyword,
-                  kw_position + 1,
-                  parent_node->subsequent_nodes[child_position]);
 }
 
 void TrieImpl::dump(std::ostream & out) {
@@ -156,18 +174,14 @@ void TrieImpl::dump(std::ostream & out) {
 Trie::Trie()
     : m_trie(new TrieImpl()) {}
 
-Trie::~Trie() {
-    if(m_trie) {
-        delete m_trie;
-    }
-}
+Trie::~Trie() {}
 
 Trie::Trie(const Trie & other)
     : m_trie(new TrieImpl(*(other.m_trie))) {}
 
 const Trie & Trie::operator=(const Trie & rhs) {
     if(this != &rhs) {
-        *(this->m_trie) = *(rhs.m_trie);
+        this->m_trie.reset(new TrieImpl(*(rhs.m_trie)));
     }
 
     return *this;

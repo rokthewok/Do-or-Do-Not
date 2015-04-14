@@ -24,7 +24,7 @@
 #include <gtest/gtest.h>
 #include "../include/thereisno_trienode.h"
 
-TEST(TrieNodeTests, TestTrieConstructor) {
+TEST(TrieNodeTests, TestTrieNodeConstructor) {
     EXPECT_NO_THROW(tin::TrieNode('a'));
 }
 
